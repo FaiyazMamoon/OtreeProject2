@@ -181,20 +181,28 @@ class JobPage(Page):
     timeout_seconds = 30
 
     def vars_for_template(player):
-        return dict(num1=player.num1, num2= player.num2, job = player.job_A, role=player.role)
+        return dict(num1=player.num1, num2=player.num2, job=player.job_A, role=player.role)
 
     def is_displayed(player):
         return (not (player.role == "a")) and player.allowed
     
     def live_method(player, data):
         if data["type"] == 'ans':
-            if data['data']["ans"] == None:
+            if data['data']["ans"] is None:
                 pass
-            elif int(data['data']["ans"]) == player.num1 * player.num2:
-                player.job_count+=1
-                player.num1 = randint(1,10)
-                player.num2 = randint(1,10)
-                return {player.id_in_group:{"type":"reload", "data" : {"num1": player.num1, "num2": player.num2}}}
+            else:
+                product = int(data['data']["ans"])
+                if product == player.num1 * player.num2:
+                    player.job_count += 1
+                    used_combinations = player.participant.vars.get('used_combinations', [])
+                    new_combination = (player.num1, player.num2)
+                    while new_combination in used_combinations or 10 in new_combination:
+                        player.num1 = randint(1, 9)
+                        player.num2 = choice([2, 4, 6, 7, 8, 9, 16, 32, 5, 25, 11, 22, 33, 44, 55, 99, 15, 35, 45])
+                        new_combination = (player.num1, player.num2)
+                    used_combinations.append(new_combination)
+                    player.participant.vars['used_combinations'] = used_combinations
+                    return {player.id_in_group: {"type": "reload", "data": {"num1": player.num1, "num2": player.num2}}}
         
 
 class WaitJob(WaitPage):
